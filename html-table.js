@@ -17,6 +17,13 @@
     isEvenRow = false;
 
     constructor(headerData) {
+      if (!headerData) {
+        console.error(
+          'error in Table constructor: need header to initialize table'
+        );
+        return;
+      }
+
       const headerRow = this.createNode('tr');
 
       for (const thData of headerData) {
@@ -24,7 +31,10 @@
         th.textContent = thData.caption;
         th.style.width = `${thData.width}px`;
         headerRow.append(th);
-        this.rowCellsNames.push({ name: thData.name, type: thData.type });
+        this.rowCellsNames.push({
+          name: thData.name,
+          type: thData.type,
+        });
       }
 
       this.tHead.append(headerRow);
@@ -76,6 +86,15 @@
       return wrapper;
     }
 
+    createLink({ text, href, blank }) {
+      const link = document.createElement('a');
+      link.textContent = text ?? window.location.origin + href;
+      link.setAttribute('href', href);
+      blank && link.setAttribute('target', '_blank');
+
+      return link;
+    }
+
     insert() {
       const tr = this.createNode('tr');
       const row = {};
@@ -84,48 +103,108 @@
         const td = this.createCellNode('td');
         row[name] = {};
 
+        const createLink = this.createLink;
+
         Object.defineProperty(row, name, {
           set(value) {
-            if (
-              ['text', 'date'].includes(type) ||
-              typeof value === 'string' ||
-              typeof value === 'number'
-            ) {
-              td.textContent = value;
-              return;
+            if (type === 'number') {
+              try {
+                let numb = value;
+                if (numb === undefined || numb === null) return;
+                numb = Math.round(numb * 100) / 100;
+                const [start, end] = numb.toString().split('.');
+                let count = 0;
+                numb = start
+                  .split('')
+                  .reverse()
+                  .reduce((sum, num) => {
+                    count++;
+                    sum = sum.concat(num);
+                    if (count === 3) {
+                      count = 0;
+                      sum = sum.concat(' ');
+                    }
+                    return sum;
+                  }, '')
+                  .split('')
+                  .reverse()
+                  .join('')
+                  .trim();
+
+                if (end !== undefined) {
+                  numb = numb + '.' + end;
+                }
+
+                td.textContent = numb;
+              } catch (e) {
+                console.error('error in type === number', e);
+                td.textContent = value ?? '';
+              } finally {
+                td.style.textAlign = 'right';
+                return;
+              }
             }
 
             if (type === 'file') {
-              td.append(
-                createLink({
-                  text: value.data?.__name,
-                  href: `(p:preview/${value.data?.__id})`,
-                })
-              );
-              return;
+              try {
+                td.append(
+                  createLink({
+                    text: value.data?.__name,
+                    href: `(p:preview/${value.data?.__id})`,
+                  })
+                );
+              } catch (e) {
+                console.error('error in type === file', e);
+              } finally {
+                return;
+              }
             }
 
             if (type === 'user') {
-              td.append(
-                createLink({
-                  text: value.data?.__name,
-                  href: `/profile/${value.data?.__id}`,
-                })
-              );
-              return;
-            }
-
-            if (Array.isArray(value)) {
-              value.forEach((item) => {
-                const div = document.createElement('div');
-                div.append(item);
-                td.append(div);
-              });
-              return;
+              try {
+                td.append(
+                  createLink({
+                    text: value.data?.__name,
+                    href: `/profile/${value.data?.__id}`,
+                    blank: true,
+                  })
+                );
+              } catch (e) {
+                console.error('error in type === user', e);
+              } finally {
+                return;
+              }
             }
 
             if (type === 'link') {
-              td.append(createLink({ text: value.text, href: value.href }));
+              try {
+                td.append(createLink({ text: value.text, href: value.href }));
+              } catch (e) {
+                console.error('error in type === file', e);
+              } finally {
+                return;
+              }
+            }
+
+            if (Array.isArray(value)) {
+              try {
+                value.forEach((item) => {
+                  const div = document.createElement('div');
+                  div.append(item);
+                  td.append(div);
+                });
+              } catch (e) {
+                console.error('error in type === array', e);
+              } finally {
+                return;
+              }
+            }
+
+            try {
+              td.textContent = value;
+            } catch (e) {
+              console.error('error in undefined type', e);
+            } finally {
               return;
             }
           },
@@ -160,15 +239,5 @@
 
   return {
     Table: Table,
-    name: 'Table',
   };
 });
-
-function createLink({ text, href, blank }) {
-  const link = document.createElement('a');
-  link.textContent = text ?? window.location.origin + href;
-  link.setAttribute('href', href);
-  blank && link.setAttribute('target', '_blank');
-
-  return link;
-}
