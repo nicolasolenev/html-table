@@ -25,6 +25,7 @@ class Table {
       this.rowCellsNames.push({
         name: thData.name,
         type: thData.type,
+        align: thData.align,
       });
     }
 
@@ -35,7 +36,7 @@ class Table {
     return document.createElement(name);
   }
 
-  createCellNode(name) {
+  createCellNode(name, align) {
     const td = this.createNode(name);
     td.style.border = this.border;
     td.style.padding = this.padding;
@@ -92,18 +93,24 @@ class Table {
     const tr = this.createNode('tr');
     const row = {};
 
-    for (const { name, type } of this.rowCellsNames) {
+    for (const { name, type, align } of this.rowCellsNames) {
       const td = this.createCellNode('td');
+      if (align === 'left' || align === 'right') {
+        td.style.textAlign = align;
+      }
+
       row[name] = {};
 
       const createLink = this.createLink;
 
       Object.defineProperty(row, name, {
         set(value) {
+          const code = value?.code;
+          const kind = value?.kind;
+
           if (type === 'number') {
             td.style.textAlign = 'right';
             const numbers = [value].flat(1);
-            console.log(numbers);
             numbers.forEach((item) => {
               if (isNaN(item)) {
                 console.error('error in type "number": isNaN', item);
@@ -145,7 +152,7 @@ class Table {
             return;
           }
 
-          if (type === 'file') {
+          if (type === 'file' || code === 'disk_files' || kind === 'file') {
             const files = [value].flat(1);
             try {
               files.forEach((file) => {
@@ -163,7 +170,7 @@ class Table {
             }
           }
 
-          if (type === 'user') {
+          if (type === 'user' || code === 'users') {
             const users = [value].flat(1);
             try {
               users.forEach((user) => {
@@ -177,6 +184,24 @@ class Table {
               });
             } catch (e) {
               console.error('error in type "user"', e);
+            } finally {
+              return;
+            }
+          }
+
+          if (type === 'app') {
+            const apps = [value].flat(1);
+            try {
+              apps.forEach((app) => {
+                if (!app) return;
+                const link = createLink({
+                  text: app.name,
+                  href: `(p:item/${app.namespace}/${app.code}/${app.id})`,
+                });
+                td.append(link);
+              });
+            } catch (e) {
+              console.error('error in type "app"', e);
             } finally {
               return;
             }
@@ -246,8 +271,8 @@ class Table {
 
 const mockData = {
   header: [
-    { name: 'name', caption: 'Наименование', width: 200 },
-    { name: 'desc', caption: 'Описание', width: 300 },
+    { name: 'name', caption: 'Наименование', width: 200, align: 'left' },
+    { name: 'desc', caption: 'Описание', width: 300, align: 'right' },
     { name: 'file', caption: 'Файл', width: 150, type: 'file' },
     { name: 'data_arr', caption: 'Массив' },
     { name: 'numb', caption: 'Число', type: 'number' },
@@ -278,12 +303,13 @@ const mockData = {
     {
       name: 'Компания 3',
       desc: 'Описание Компании 3',
-      file: { data: { __id: '#', __name: 'file 3' } },
+      file: [{ data: { __id: '#', __name: 'file 3' } }],
       numb: 132423.121313,
       date: '14.12.2022',
       user: [
         { data: { __name: 'Юлия Гаврилова ' } },
         { data: { __id: '#', __name: 'Юлия Гаврилова ' } },
+        { data: { __id: '#', __name: undefined } },
       ],
     },
     {
