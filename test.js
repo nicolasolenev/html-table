@@ -36,7 +36,7 @@ class Table {
     return document.createElement(name);
   }
 
-  createCellNode(name, align) {
+  createCellNode(name) {
     const td = this.createNode(name);
     td.style.border = this.border;
     td.style.padding = this.padding;
@@ -79,11 +79,12 @@ class Table {
   }
 
   createLink({ text, href, blank }) {
+    if (!text && !href) return;
     const link = document.createElement('a');
     link.textContent = text ?? window.location.origin + href;
-    !href.includes('undefined') && link.setAttribute('href', href);
+    href && link.setAttribute('href', href);
     link.style.display = 'block';
-    link.style.margin = '2px 0 2px 0';
+    link.style.margin = '5px 0';
     blank && link.setAttribute('target', '_blank');
 
     return link;
@@ -159,9 +160,9 @@ class Table {
                 if (!file) return;
                 const link = createLink({
                   text: file.data?.__name,
-                  href: `(p:preview/${file.data?.__id})`,
+                  href: file.data?.__id && `(p:preview/${file.data?.__id})`,
                 });
-                td.append(link);
+                link && td.append(link);
               });
             } catch (e) {
               console.error('error in type "file"', e);
@@ -177,10 +178,10 @@ class Table {
                 if (!user) return;
                 const link = createLink({
                   text: user.data?.__name,
-                  href: `/profile/${user.data?.__id}`,
+                  href: user.data?.__id && `/profile/${user.data?.__id}`,
                   blank: true,
                 });
-                td.append(link);
+                link && td.append(link);
               });
             } catch (e) {
               console.error('error in type "user"', e);
@@ -217,7 +218,7 @@ class Table {
                   href: item.href,
                   blank: true,
                 });
-                td.append(link);
+                link && td.append(link);
               });
             } catch (e) {
               console.error('error in type "link"', e);
@@ -294,11 +295,16 @@ const mockData = {
         { data: { __id: '#', __name: 'file 2' } },
         undefined,
         { data: { __id: '#', __name: 'file 2.2' } },
+        { data: { __id: '#', __name: 'file 2.2' } },
+        { data: { __id: '#', __name: 'file 2.2' } },
       ],
       numb: [13242945.2, '0123'],
       data_arr: [2, 'строки'],
       date: '13.12.2022',
-      user: { data: { __id: '#', __name: 'Андрей Сидоров' } },
+      user: [
+        { data: { __id: '#', __name: 'Андрей Сидоров' } },
+        { data: { __id: '#', __name: 'Андрей Сидоров' } },
+      ],
     },
     {
       name: 'Компания 3',
@@ -310,6 +316,7 @@ const mockData = {
         { data: { __name: 'Юлия Гаврилова ' } },
         { data: { __id: '#', __name: 'Юлия Гаврилова ' } },
         { data: { __id: '#', __name: undefined } },
+        { data: { __id: undefined, __name: undefined } },
       ],
     },
     {
