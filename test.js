@@ -80,7 +80,9 @@ class Table {
   createLink({ text, href, blank }) {
     const link = document.createElement('a');
     link.textContent = text ?? window.location.origin + href;
-    link.setAttribute('href', href);
+    !href.includes('undefined') && link.setAttribute('href', href);
+    link.style.display = 'block';
+    link.style.margin = '2px 0 2px 0';
     blank && link.setAttribute('target', '_blank');
 
     return link;
@@ -99,102 +101,116 @@ class Table {
       Object.defineProperty(row, name, {
         set(value) {
           if (type === 'number') {
-            try {
-              let numb = value;
-              if (numb === undefined || numb === null) return;
-              numb = Math.round(numb * 100) / 100;
-              const [start, end] = numb.toString().split('.');
-              let count = 0;
-              numb = start
-                .split('')
-                .reverse()
-                .reduce((sum, num) => {
-                  count++;
-                  sum = sum.concat(num);
-                  if (count === 3) {
-                    count = 0;
-                    sum = sum.concat(' ');
-                  }
-                  return sum;
-                }, '')
-                .split('')
-                .reverse()
-                .join('')
-                .trim();
-
-              if (end !== undefined) {
-                numb = numb + '.' + end;
+            td.style.textAlign = 'right';
+            const numbers = [value].flat(1);
+            console.log(numbers);
+            numbers.forEach((item) => {
+              if (isNaN(item)) {
+                console.error('error in type "number": isNaN', item);
               }
+              try {
+                let numb = item;
+                if (numb === undefined || numb === null) return;
+                numb = Math.round(numb * 100) / 100;
+                const [intPart, floatPart] = numb.toString().split('.');
+                let count = 0;
+                numb = intPart
+                  .split('')
+                  .reverse()
+                  .reduce((sum, num) => {
+                    count++;
+                    sum = sum.concat(num);
+                    if (count === 3) {
+                      count = 0;
+                      sum = sum.concat(' ');
+                    }
+                    return sum;
+                  }, '')
+                  .split('')
+                  .reverse()
+                  .join('')
+                  .trim();
 
-              td.textContent = numb;
-            } catch (e) {
-              console.error('error in type === number', e);
-              td.textContent = value ?? '';
-            } finally {
-              td.style.textAlign = 'right';
-              return;
-            }
+                if (floatPart !== undefined) {
+                  numb = numb + '.' + floatPart;
+                }
+                const div = document.createElement('div');
+                div.textContent = numb;
+                td.append(div);
+              } catch (e) {
+                console.error('error in type "number"', e);
+                td.textContent = value ?? '';
+              }
+            });
+            return;
           }
 
           if (type === 'file') {
+            const files = [value].flat(1);
             try {
-              td.append(
-                createLink({
-                  text: value.data?.__name,
-                  href: `(p:preview/${value.data?.__id})`,
-                })
-              );
+              files.forEach((file) => {
+                if (!file) return;
+                const link = createLink({
+                  text: file.data?.__name,
+                  href: `(p:preview/${file.data?.__id})`,
+                });
+                td.append(link);
+              });
             } catch (e) {
-              console.error('error in type === file', e);
+              console.error('error in type "file"', e);
             } finally {
               return;
             }
           }
 
           if (type === 'user') {
+            const users = [value].flat(1);
             try {
-              td.append(
-                createLink({
-                  text: value.data?.__name,
-                  href: `/profile/${value.data?.__id}`,
+              users.forEach((user) => {
+                if (!user) return;
+                const link = createLink({
+                  text: user.data?.__name,
+                  href: `/profile/${user.data?.__id}`,
                   blank: true,
-                })
-              );
+                });
+                td.append(link);
+              });
             } catch (e) {
-              console.error('error in type === user', e);
+              console.error('error in type "user"', e);
             } finally {
               return;
             }
           }
 
           if (type === 'link') {
+            const items = [value].flat(1);
             try {
-              td.append(createLink({ text: value.text, href: value.href }));
-            } catch (e) {
-              console.error('error in type === file', e);
-            } finally {
-              return;
-            }
-          }
-
-          if (Array.isArray(value)) {
-            try {
-              value.forEach((item) => {
-                const div = document.createElement('div');
-                div.append(item);
-                td.append(div);
+              items.forEach((item) => {
+                if (!item) return;
+                const link = createLink({
+                  text: item.text,
+                  href: item.href,
+                  blank: true,
+                });
+                td.append(link);
               });
             } catch (e) {
-              console.error('error in type === array', e);
+              console.error('error in type "link"', e);
             } finally {
               return;
             }
           }
 
+          const arr = [value].flat(1);
           try {
-            td.textContent = value;
+            arr.forEach((item) => {
+              if (item === undefined || item === null) return;
+              const div = document.createElement('div');
+              div.append(item);
+              td.append(div);
+            });
           } catch (e) {
-            console.error('error in undefined type', e);
+            console.error('error in "unknown" type', e);
           } finally {
             return;
           }
@@ -240,7 +256,7 @@ const mockData = {
   ],
   rows: [
     {
-      name: 'Компания 1',
+      name: ['Компания 1', 'Компания 1.1'],
       desc: 'Описание Компании 1',
       file: { data: { __id: '#', __name: 'file 1' } },
       date: '12.12.2022',
@@ -249,8 +265,12 @@ const mockData = {
     {
       name: 'Компания 2',
       desc: 'Описание Компании 2',
-      file: { data: { __id: '#', __name: 'file 2' } },
-      numb: 13242945.121313,
+      file: [
+        { data: { __id: '#', __name: 'file 2' } },
+        undefined,
+        { data: { __id: '#', __name: 'file 2.2' } },
+      ],
+      numb: [13242945.2, '0123'],
       data_arr: [2, 'строки'],
       date: '13.12.2022',
       user: { data: { __id: '#', __name: 'Андрей Сидоров' } },
@@ -261,7 +281,10 @@ const mockData = {
       file: { data: { __id: '#', __name: 'file 3' } },
       numb: 132423.121313,
       date: '14.12.2022',
-      user: { data: { __id: '#', __name: 'Юлия Гаврилова ' } },
+      user: [
+        { data: { __name: 'Юлия Гаврилова ' } },
+        { data: { __id: '#', __name: 'Юлия Гаврилова ' } },
+      ],
     },
     {
       name: 'Компания 4',
@@ -273,7 +296,7 @@ const mockData = {
   ],
 };
 
-const table = new Table();
+const table = new Table(mockData.header);
 
 mockData.rows.forEach((data) => {
   const row = table.insert();
