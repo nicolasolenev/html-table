@@ -34,6 +34,7 @@
         this.rowCellsNames.push({
           name: thData.name,
           type: thData.type,
+          align: thData.align,
         });
       }
 
@@ -87,9 +88,12 @@
     }
 
     createLink({ text, href, blank }) {
+      if (!text && !href) return;
       const link = document.createElement('a');
       link.textContent = text ?? window.location.origin + href;
-      link.setAttribute('href', href);
+      href && link.setAttribute('href', href);
+      link.style.display = 'block';
+      link.style.margin = '5px 0';
       blank && link.setAttribute('target', '_blank');
 
       return link;
@@ -99,111 +103,149 @@
       const tr = this.createNode('tr');
       const row = {};
 
-      for (const { name, type } of this.rowCellsNames) {
+      for (const { name, type, align } of this.rowCellsNames) {
         const td = this.createCellNode('td');
+        if (align === 'left' || align === 'right') {
+          td.style.textAlign = align;
+        }
+
         row[name] = {};
 
         const createLink = this.createLink;
 
         Object.defineProperty(row, name, {
           set(value) {
+            const code = value?.code;
+            const kind = value?.kind;
+
             if (type === 'number') {
-              try {
-                let numb = value;
-                if (numb === undefined || numb === null) return;
-                numb = Math.round(numb * 100) / 100;
-                const [start, end] = numb.toString().split('.');
-                let count = 0;
-                numb = start
-                  .split('')
-                  .reverse()
-                  .reduce((sum, num) => {
-                    count++;
-                    sum = sum.concat(num);
-                    if (count === 3) {
-                      count = 0;
-                      sum = sum.concat(' ');
-                    }
-                    return sum;
-                  }, '')
-                  .split('')
-                  .reverse()
-                  .join('')
-                  .trim();
-
-                if (end !== undefined) {
-                  numb = numb + '.' + end;
+              td.style.textAlign = 'right';
+              const numbers = [value].flat(1);
+              numbers.forEach((item) => {
+                if (isNaN(item)) {
+                  console.error('error in type "number": isNaN', item);
                 }
+                try {
+                  let numb = item;
+                  if (numb === undefined || numb === null) return;
+                  numb = Math.round(numb * 100) / 100;
+                  const [intPart, floatPart] = numb.toString().split('.');
+                  let count = 0;
+                  numb = intPart
+                    .split('')
+                    .reverse()
+                    .reduce((sum, num) => {
+                      count++;
+                      sum = sum.concat(num);
+                      if (count === 3) {
+                        count = 0;
+                        sum = sum.concat(' ');
+                      }
+                      return sum;
+                    }, '')
+                    .split('')
+                    .reverse()
+                    .join('')
+                    .trim();
 
-                td.textContent = numb;
+                  if (floatPart !== undefined) {
+                    numb = numb + '.' + floatPart;
+                  }
+                  const div = document.createElement('div');
+                  div.textContent = numb;
+                  td.append(div);
+                } catch (e) {
+                  console.error('error in type "number"', e);
+                  td.textContent = value ?? '';
+                }
+              });
+              return;
+            }
+
+            if (type === 'file' || code === 'disk_files' || kind === 'file') {
+              const files = [value].flat(1);
+              try {
+                files.forEach((file) => {
+                  if (!file) return;
+                  const link = createLink({
+                    text: file.data?.__name,
+                    href: file.data?.__id && `(p:preview/${file.data?.__id})`,
+                  });
+                  link && td.append(link);
+                });
               } catch (e) {
-                console.error('error in type === number', e);
-                td.textContent = value ?? '';
+                console.error('error in type "file"', e);
               } finally {
-                td.style.textAlign = 'right';
                 return;
               }
             }
 
-            if (type === 'file') {
+            if (type === 'user' || code === 'users') {
+              const users = [value].flat(1);
               try {
-                td.append(
-                  createLink({
-                    text: value.data?.__name,
-                    href: `(p:preview/${value.data?.__id})`,
-                  })
-                );
-              } catch (e) {
-                console.error('error in type === file', e);
-              } finally {
-                return;
-              }
-            }
-
-            if (type === 'user') {
-              try {
-                td.append(
-                  createLink({
-                    text: value.data?.__name,
-                    href: `/profile/${value.data?.__id}`,
+                users.forEach((user) => {
+                  if (!user) return;
+                  const link = createLink({
+                    text: user.data?.__name,
+                    href: user.data?.__id && `/profile/${user.data?.__id}`,
                     blank: true,
-                  })
-                );
+                  });
+                  link && td.append(link);
+                });
               } catch (e) {
-                console.error('error in type === user', e);
+                console.error('error in type "user"', e);
+              } finally {
+                return;
+              }
+            }
+
+            if (type === 'app') {
+              const apps = [value].flat(1);
+              try {
+                apps.forEach((app) => {
+                  if (!app) return;
+                  const link = createLink({
+                    text: app.name,
+                    href: `(p:item/${app.namespace}/${app.code}/${app.id})`,
+                  });
+                  td.append(link);
+                });
+              } catch (e) {
+                console.error('error in type "app"', e);
               } finally {
                 return;
               }
             }
 
             if (type === 'link') {
+              const items = [value].flat(1);
               try {
-                td.append(createLink({ text: value.text, href: value.href }));
-              } catch (e) {
-                console.error('error in type === file', e);
-              } finally {
-                return;
-              }
-            }
-
-            if (Array.isArray(value)) {
-              try {
-                value.forEach((item) => {
-                  const div = document.createElement('div');
-                  div.append(item);
-                  td.append(div);
+                items.forEach((item) => {
+                  if (!item) return;
+                  const link = createLink({
+                    text: item.text,
+                    href: item.href,
+                    blank: true,
+                  });
+                  link && td.append(link);
                 });
               } catch (e) {
-                console.error('error in type === array', e);
+                console.error('error in type "link"', e);
               } finally {
                 return;
               }
             }
 
+            const arr = [value].flat(1);
             try {
-              td.textContent = value;
+              arr.forEach((item) => {
+                if (item === undefined || item === null) return;
+                const div = document.createElement('div');
+                div.append(item);
+                td.append(div);
+              });
             } catch (e) {
-              console.error('error in undefined type', e);
+              console.error('error in "unknown" type', e);
             } finally {
               return;
             }
