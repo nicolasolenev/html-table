@@ -2,26 +2,47 @@
 
 Поддерживает следующие типы данных:
 
-- number
-- file
-- user
-- link
-- массив строк/чисел
-- строка (когда тип не задан)
+- number | number[]
+- file | file[]
+- user | user[]
+- link | link[]
+- строка | массив строк
+- app | app[]
+
+где:
+interface IFile, IUser = {
+data: {
+**id: string;
+**name: string;
+}
+}
+
+inteface ILink = {
+text: string; // название ссылки
+href: string; // ссылка
+}
+
+interface IApp = {
+namespace: string;
+code: string;
+id: string;
+name: string;
+}
 
 Создание экземпляра таблицы
 
 Вызвать конструктор с параметром в виде массива объектов типа IHeader, где каждый объект - это столбец таблицы, где
 name - ключ ячейки в далее созданной строке таблицы
-caption - название столбца (заголовок) таблицы
-width - (необязательное поле) ширина столбца в пикселях (если не задана, то задается автоматически)
-type - (необязательное поле) тип данных
+caption - название столбца (заголовок)
+width - (необязательное поле) ширина столбца в пикселях
+type - (необязательное поле) тип данных. Обязательно указывать тип если это link, app
 
 interface IHeader = {
 name: string;
 caption: string;
 width?: number;
-type?: string;
+type?: string; (number, file, user, link, app)
+align?: string; (left, center, right)
 }
 
 new Table(header: IHeader[]);
