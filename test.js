@@ -106,8 +106,8 @@ class Table {
 
       Object.defineProperty(row, name, {
         set(value) {
-          const code = value?.code;
-          const kind = value?.kind;
+          const code = [value].flat(1)[0]?.code;
+          const kind = [value].flat(1)[0]?.kind;
 
           if (type === 'number') {
             td.style.textAlign = 'right';
@@ -278,7 +278,7 @@ const mockData = {
     { name: 'data_arr', caption: 'Массив' },
     { name: 'numb', caption: 'Число', type: 'number' },
     { name: 'date', caption: 'Дата', width: 100 },
-    { name: 'user', caption: 'Пользователь', width: 200, type: 'user' },
+    { name: 'user', caption: 'Пользователь', width: 200 },
   ],
   rows: [
     {
@@ -286,7 +286,7 @@ const mockData = {
       desc: 'Описание Компании 1',
       file: { data: { __id: '#', __name: 'file 1' } },
       date: '12.12.2022',
-      user: { data: { __id: '#', __name: 'Николай Петров' } },
+      user: { code: 'users', data: { __id: '#', __name: 'Николай Петров' } },
     },
     {
       name: 'Компания 2',
@@ -302,8 +302,8 @@ const mockData = {
       data_arr: [2, 'строки'],
       date: '13.12.2022',
       user: [
-        { data: { __id: '#', __name: 'Андрей Сидоров' } },
-        { data: { __id: '#', __name: 'Андрей Сидоров' } },
+        { code: 'users', data: { __id: '#', __name: 'Андрей Сидоров' } },
+        { code: 'users', data: { __id: '#', __name: 'Андрей Сидоров' } },
       ],
     },
     {
@@ -313,10 +313,10 @@ const mockData = {
       numb: 132423.121313,
       date: '14.12.2022',
       user: [
-        { data: { __name: 'Юлия Гаврилова ' } },
-        { data: { __id: '#', __name: 'Юлия Гаврилова ' } },
-        { data: { __id: '#', __name: undefined } },
-        { data: { __id: undefined, __name: undefined } },
+        { code: 'users', data: { __name: 'Юлия Гаврилова ' } },
+        { code: 'users', data: { __id: '#', __name: 'Юлия Гаврилова ' } },
+        { code: 'users', data: { __id: '#', __name: undefined } },
+        { code: 'users', data: { __id: undefined, __name: undefined } },
       ],
     },
     {
@@ -324,7 +324,7 @@ const mockData = {
       desc: 'Описание Компании 4',
       file: { data: { __id: '#', __name: 'file 4' } },
       date: '15.12.2022',
-      user: { data: { __id: '#', __name: 'Анна Блок' } },
+      user: { code: 'users', data: { __id: '#', __name: 'Анна Блок' } },
     },
   ],
 };

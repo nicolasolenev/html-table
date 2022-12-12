@@ -115,8 +115,8 @@
 
         Object.defineProperty(row, name, {
           set(value) {
-            const code = value?.code;
-            const kind = value?.kind;
+            const code = [value].flat(1)[0]?.code;
+            const kind = [value].flat(1)[0]?.kind;
 
             if (type === 'number') {
               td.style.textAlign = 'right';
