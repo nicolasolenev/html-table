@@ -111,6 +111,7 @@ class Table {
 
           if (type === 'number') {
             td.style.textAlign = 'right';
+            td.style.whiteSpace = 'nowrap';
             const numbers = [value].flat(1);
             numbers.forEach((item) => {
               if (isNaN(item)) {
