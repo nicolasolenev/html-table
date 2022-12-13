@@ -16,7 +16,7 @@
     backgroundColor = 'rgba(199, 199, 199, 0.15)';
     isEvenRow = false;
 
-    constructor(headerData) {
+    constructor(headerData, { headerTop } = { headerTop: 0 }) {
       if (!headerData) {
         console.error(
           'error in Table constructor: need header to initialize table'
@@ -38,6 +38,7 @@
         });
       }
 
+      this.tHead.style.top = `${headerTop}px`;
       this.tHead.append(headerRow);
     }
 
@@ -56,7 +57,6 @@
       const tHead = this.createNode('thead');
       tHead.style.zIndex = '100';
       tHead.style.position = 'sticky';
-      tHead.style.top = '-14.5px';
       tHead.style.background = '#E4EEF8';
       return tHead;
     }
