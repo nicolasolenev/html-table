@@ -191,14 +191,14 @@ class Table {
             }
           }
 
-          if (type === 'app') {
+          if (type === 'app' || kind === 'application') {
             const apps = [value].flat(1);
             try {
               apps.forEach((app) => {
                 if (!app) return;
                 const link = createLink({
-                  text: app.name,
-                  href: `(p:item/${app.namespace}/${app.code}/${app.id})`,
+                  text: app.data?.__name,
+                  href: `(p:item/${app.namespace}/${app.code}/${app.data?.__id})`,
                 });
                 td.append(link);
               });
