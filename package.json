@@ -1,0 +1,24 @@
+{
+  "name": "html-table",
+  "version": "1.0.0",
+  "description": "html-table creator",
+  "main": "html-table.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nicolasolenev/html-table.git"
+  },
+  "keywords": [
+    "html",
+    "js",
+    "table"
+  ],
+  "author": "Nicolas Olenev",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nicolasolenev/html-table/issues"
+  },
+  "homepage": "https://github.com/nicolasolenev/html-table#readme"
+}
