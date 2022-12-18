@@ -8,7 +8,6 @@
   }
 })(this, function (b) {
   const css = `.custom-table-wrapper {
-    min-width: 830px;
     margin: 12px 0 20px;
   }
   .custom-table {
@@ -22,7 +21,7 @@
   .custom-table thead {
     z-index: 100;
     position: sticky;
-    background: #e4eef8;
+    background: #f0f6fb;
   }
   .custom-table tbody tr:nth-child(even) {
     background: #c7c7c726;
@@ -46,18 +45,25 @@
     display: block;
     margin: 5px 0;
   }
-  .sort:after {
+  .custom-table__sort:after {
     position: absolute;
-    top: -5px;
+    top: 0px;
     right: 2px;
-    font-size: 22px;
-    color: #4d4d4d;
+    font-size: 10px;
+    color: #506f9a;
+    content: '▲';
   }
-  .sort-down:after {
-    content: '˅';
+  .custom-table__sort_up:after {
+    transform: rotate(180deg);
   }
-  .sort-up:after {
-    content: '˄';
+  @media (max-width: 850px) {
+    .custom-table-wrapper {
+      overflow: scroll;
+    }
+    .custom-table {
+      width: auto;
+      min-width: 830px;
+    }
   }`;
 
   class Table {
@@ -300,16 +306,15 @@
         if (th.tagName !== 'TH') {
           return;
         }
-        const isSorted = th.classList.contains('sort-down');
+        const isSorted = th.classList.contains('custom-table__sort_up');
         ths.forEach((th) => th.removeAttribute('class'));
-        th.classList.add('sort');
-        if (!isSorted) {
-          th.classList.add('sort-down');
-          this.sortTable(table, columnIndex);
+        th.classList.add('custom-table__sort');
+        if (isSorted) {
+          this.sortTable(table, columnIndex, true);
           return;
         }
-        th.classList.add('sort-up');
-        this.sortTable(table, columnIndex, true);
+        th.classList.add('custom-table__sort_up');
+        this.sortTable(table, columnIndex);
       });
     }
   }
