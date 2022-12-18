@@ -264,7 +264,7 @@
       });
       wrapper.append(this.getTableNode());
       container.append(style, wrapper);
-      return container;
+      return container.outerHTML;
     }
 
     sortTable(table, col, reverse) {

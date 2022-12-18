@@ -1,73 +1,66 @@
-\*\* html-table
+## Конструктор html таблиц
 
-Поддерживает следующие типы данных:
+`const table = new Table(header, options)`
+_options = {headerTop, sorting}_
+_headerTop: number - отступ (в px) фиксирвоанной шапки таблицы;_
+_sorting: boolean - добавление функции сортировки таблицы по клику на заголовок столбца_
+
+`const row = table.insert()`
+
+`string_html_table = table.getTable()`
+
+### Поддерживает следующие типы данных:
 
 - number | number[]
+- text | text[]
 - file | file[]
 - user | user[]
 - link | link[]
-- строка | массив строк
 - app | app[]
 
 где:
-interface IFile, IUser = {
-data: {
-**id: string;
-**name: string;
-}
+link {
+text: string; _// название ссылки_
+href: string; _// ссылка_
 }
 
-inteface ILink = {
-text: string; // название ссылки
-href: string; // ссылка
-}
-
-interface IApp = {
-namespace: string;
-code: string;
-id: string;
-name: string;
-}
-
-Создание экземпляра таблицы
+### Создание экземпляра таблицы
 
 Вызвать конструктор с параметром в виде массива объектов типа IHeader, где каждый объект - это столбец таблицы, где
-name - ключ ячейки в далее созданной строке таблицы
+name - ключ ячейки в далее создаваемой строке таблицы
 caption - название столбца (заголовок)
 width - (необязательное поле) ширина столбца в пикселях
 type - (необязательное поле) тип данных. Обязательно указывать тип если это link, app
+align - выравнивание в ячейке (left, center, right)
 
 interface IHeader = {
 name: string;
 caption: string;
 width?: number;
-type?: string; (number, file, user, link, app)
-align?: string; (left, center, right)
+type?: 'number' | 'file' | 'user' | 'app' | 'link';
+align?: string;
 }
 
 new Table(header: IHeader[]);
 
-Добавление строки таблицы
+#### Добавление строки таблицы
 
-Предполагается, что есть массив данных, для которого нужно вызвать метод forEach или цикл for of
+_Предполагается, что есть массив данных, для которого нужно вызвать метод `forEach` или цикл `for of`_
 
 for (const item of data) {
-const row = table.insert(); // создание строки;
+const row = table.insert(); _// создание строки_
 
 for (const key in item) {
 row[key] = item[key]
 }
 }
 
-Получение элемента таблицы
+#### Получение элемента таблицы
 
-const htmlTable = table.getTableNode(); // получение непосредственно DOM-элемента table
-const htmlTable = table.getTable(); // получение DOM-элемента таблицы вложенного в обертки div,
-для непосредственного встраивания на страницу
+const htmlTable = table.getTable(); _// получение DOM-элемента контейнера с таблицей_
+_для непосредственного встраивания на страницу_
 
-Если функция построения таблицы вызывается в виджете КОД, то необходимо из функции вернуть htmlTable.outerHTML;
-
-Пример
+### Пример
 
 const header = [
 {name: 'name', caption: 'Наименование', width: 200},

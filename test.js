@@ -255,7 +255,7 @@ class Table {
     });
     wrapper.append(this.getTableNode());
     container.append(style, wrapper);
-    return container;
+    return container.outerHTML;
   }
 
   sortTable(table, col, reverse) {
@@ -484,4 +484,4 @@ mockData.rows.forEach((data) => {
 
 const htmlTable = table.getTable();
 
-document.getElementById('root').innerHTML = htmlTable.outerHTML;
+document.getElementById('root').innerHTML = htmlTable;
