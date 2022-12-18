@@ -37,18 +37,16 @@ const css = `.custom-table-wrapper {
   display: block;
   margin: 5px 0;
 }
-.sort:after {
+.custom-table__sort:after {
   position: absolute;
-  top: -5px;
+  top: 0px;
   right: 2px;
-  font-size: 22px;
-  color: #4d4d4d;
+  font-size: 10px;
+  color: #506f9a;
+  content: '▲';
 }
-.sort-down:after {
-  content: '˅';
-}
-.sort-up:after {
-  content: '˄';
+.custom-table__sort_up:after {
+  transform: rotate(180deg);
 }`;
 
 class Table {
@@ -291,16 +289,15 @@ class Table {
       if (th.tagName !== 'TH') {
         return;
       }
-      const isSorted = th.classList.contains('sort-down');
+      const isSorted = th.classList.contains('custom-table__sort_up');
       ths.forEach((th) => th.removeAttribute('class'));
-      th.classList.add('sort');
-      if (!isSorted) {
-        th.classList.add('sort-down');
-        this.sortTable(table, columnIndex);
+      th.classList.add('custom-table__sort');
+      if (isSorted) {
+        this.sortTable(table, columnIndex, true);
         return;
       }
-      th.classList.add('sort-up');
-      this.sortTable(table, columnIndex, true);
+      th.classList.add('custom-table__sort_up');
+      this.sortTable(table, columnIndex);
     });
   }
 }

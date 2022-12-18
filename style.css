@@ -37,16 +37,14 @@
   display: block;
   margin: 5px 0;
 }
-.sort:after {
+.custom-table__sort:after {
   position: absolute;
-  top: -5px;
+  top: 0px;
   right: 2px;
-  font-size: 22px;
-  color: #4d4d4d;
+  font-size: 10px;
+  color: #506f9a;
+  content: '▲';
 }
-.sort-down:after {
-  content: '˅';
-}
-.sort-up:after {
-  content: '˄';
+.custom-table__sort_up:after {
+  transform: rotate(180deg);
 }
