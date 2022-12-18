@@ -6,8 +6,9 @@ class Table {
   padding = '4px';
   backgroundColor = 'rgba(199, 199, 199, 0.15)';
   isEvenRow = false;
+  sortingCount = 300;
 
-  constructor(headerData, { headerTop } = { headerTop: 0 }) {
+  constructor(headerData, { headerTop, sorting } = { headerTop: 0 }) {
     if (!headerData) {
       console.error(
         'error in Table constructor: need header to initialize table'
@@ -19,8 +20,10 @@ class Table {
 
     for (const thData of headerData) {
       const th = this.createCellNode('th');
+      th.dataset.name = thData.name;
       th.textContent = thData.caption;
       th.style.width = `${thData.width}px`;
+      th.style.position = 'relative';
       headerRow.append(th);
       this.rowCellsNames.push({
         name: thData.name,
@@ -31,6 +34,9 @@ class Table {
 
     this.tHead.style.top = `${headerTop}px`;
     this.tHead.append(headerRow);
+    this.tableId = 'id' + Math.random().toString(16).slice(2);
+
+    sorting && this.addSorting();
   }
 
   createNode(name) {
@@ -49,11 +55,13 @@ class Table {
     tHead.style.zIndex = '100';
     tHead.style.position = 'sticky';
     tHead.style.background = '#E4EEF8';
+    tHead.style.userSelect = 'none';
     return tHead;
   }
 
   createTableNode() {
     const table = this.createNode('table');
+    table.id = this.tableId;
     table.style.border = this.border;
     table.style.width = '100%';
     table.style.borderCollapse = 'separate';
@@ -114,41 +122,21 @@ class Table {
             td.style.whiteSpace = 'nowrap';
             const numbers = [value].flat(1);
             numbers.forEach((item) => {
-              if (isNaN(item)) {
-                console.error('error in type "number": isNaN', item);
+              if (isNaN(item) || item === null) {
+                console.error('error in type "number": isNaN or null', item);
+                return;
               }
               try {
-                let numb = item;
-                if (numb === undefined || numb === null) return;
-                numb = Math.round(numb * 100) / 100;
-                const [intPart, floatPart] = numb.toString().split('.');
-                let count = 0;
-                numb = intPart
-                  .split('')
-                  .reverse()
-                  .reduce((sum, num) => {
-                    count++;
-                    sum = sum.concat(num);
-                    if (count === 3) {
-                      count = 0;
-                      sum = sum.concat(' ');
-                    }
-                    return sum;
-                  }, '')
-                  .split('')
-                  .reverse()
-                  .join('')
-                  .trim();
+                const numb = new Intl.NumberFormat('ru-RU', {
+                  maximumFractionDigits: 2,
+                }).format(item);
 
-                if (floatPart !== undefined) {
-                  numb = numb + '.' + floatPart;
-                }
                 const div = document.createElement('div');
                 div.textContent = numb;
                 td.append(div);
               } catch (e) {
                 console.error('error in type "number"', e);
-                td.textContent = value ?? '';
+                td.textContent = item ?? '';
               }
             });
             return;
@@ -266,8 +254,74 @@ class Table {
     const container = this.createContainerNode();
     const wrapper = this.createWrapperNode();
     wrapper.append(this.getTableNode());
+    const style = this.createNode('style');
+    style.appendChild(
+      document.createTextNode(`
+        .sort:after {
+          position: absolute;
+          top: -5px;
+          right: 2px;
+          font-size: 22px;
+          color: #4d4d4d;
+        }
+        .sort-down:after {
+          content: '˅';
+        }
+        .sort-up:after {
+          content: '˄';
+        }
+      `)
+    );
+    container.append(style);
     container.append(wrapper);
     return container;
+  }
+
+  sortTable(table, col, reverse) {
+    const tb = table.tBodies[0];
+    const trs = [...tb.rows];
+    reverse = -(+reverse || -1);
+    trs.sort(
+      (a, b) =>
+        reverse *
+        a.cells[col].textContent
+          .trim()
+          .localeCompare(b.cells[col].textContent.trim())
+    );
+    trs.forEach((tr) => tb.append(tr));
+  }
+
+  addSorting() {
+    const table = document.getElementById(this.tableId);
+    if (!table) {
+      --this.sortingCount > 0 &&
+        window.setTimeout(() => this.addSorting(), 800);
+      return;
+    }
+    const tHead = table?.querySelector('thead');
+    const ths = [...table?.querySelectorAll('th')];
+    const columns = this.rowCellsNames;
+    tHead.style.cursor = 'pointer';
+    tHead.addEventListener('click', (e) => {
+      const columnIndex = columns.findIndex(
+        (col) => col.name === e.target.dataset.name
+      );
+      const th = e.target;
+      if (th.tagName !== 'TH') {
+        return;
+      }
+      const isSorted = th.classList.contains('sort-down');
+      ths.forEach((th) => (th.className = ''));
+      th.classList.add('sort');
+      if (!isSorted) {
+        th.classList.add('sort-down');
+        this.sortTable(table, columnIndex);
+        return;
+      }
+      th.classList.remove('sort-down');
+      th.classList.add('sort-up');
+      this.sortTable(table, columnIndex, true);
+    });
   }
 }
 
@@ -299,6 +353,24 @@ const mockData = {
         { data: { __id: '#', __name: 'file 2.2' } },
         { data: { __id: '#', __name: 'file 2.2' } },
       ],
+      numb: [13242945.2, '0123.000'],
+      data_arr: [2, 'строки'],
+      date: '13.12.2022',
+      user: [
+        { code: 'users', data: { __id: '#', __name: 'Андрей Сидоров' } },
+        { code: 'users', data: { __id: '#', __name: 'Андрей Сидоров' } },
+      ],
+    },
+    {
+      name: 'Компания 2',
+      desc: 'Описание Компании 2',
+      file: [
+        { data: { __id: '#', __name: 'file 2' } },
+        undefined,
+        { data: { __id: '#', __name: 'file 2.2' } },
+        { data: { __id: '#', __name: 'file 2.2' } },
+        { data: { __id: '#', __name: 'file 2.2' } },
+      ],
       numb: [13242945.2, '0123'],
       data_arr: [2, 'строки'],
       date: '13.12.2022',
@@ -308,7 +380,97 @@ const mockData = {
       ],
     },
     {
-      name: 'Компания 3',
+      name: 'Компания 2',
+      desc: 'Описание Компании 2',
+      file: [
+        { data: { __id: '#', __name: 'file 2' } },
+        undefined,
+        { data: { __id: '#', __name: 'file 2.2' } },
+        { data: { __id: '#', __name: 'file 2.2' } },
+        { data: { __id: '#', __name: 'file 2.2' } },
+      ],
+      numb: [13242945.2, '0123'],
+      data_arr: [2, 'строки'],
+      date: '13.12.2022',
+      user: [
+        { code: 'users', data: { __id: '#', __name: 'Андрей Сидоров' } },
+        { code: 'users', data: { __id: '#', __name: 'Андрей Сидоров' } },
+      ],
+    },
+    {
+      name: 'Компания 2',
+      desc: 'Описание Компании 2',
+      file: [
+        { data: { __id: '#', __name: 'file 2' } },
+        undefined,
+        { data: { __id: '#', __name: 'file 2.2' } },
+        { data: { __id: '#', __name: 'file 2.2' } },
+        { data: { __id: '#', __name: 'file 2.2' } },
+      ],
+      numb: [13242945.2, '0123'],
+      data_arr: [2, 'строки'],
+      date: '13.12.2022',
+      user: [
+        { code: 'users', data: { __id: '#', __name: 'Андрей Сидоров' } },
+        { code: 'users', data: { __id: '#', __name: 'Андрей Сидоров' } },
+      ],
+    },
+    {
+      name: 'Компания 2',
+      desc: 'Описание Компании 2',
+      file: [
+        { data: { __id: '#', __name: 'file 2' } },
+        undefined,
+        { data: { __id: '#', __name: 'file 2.2' } },
+        { data: { __id: '#', __name: 'file 2.2' } },
+        { data: { __id: '#', __name: 'file 2.2' } },
+      ],
+      numb: [13242945.2, '0123'],
+      data_arr: [2, 'строки'],
+      date: '13.12.2022',
+      user: [
+        { code: 'users', data: { __id: '#', __name: 'Андрей Сидоров' } },
+        { code: 'users', data: { __id: '#', __name: 'Андрей Сидоров' } },
+      ],
+    },
+    {
+      name: 'С компания 2',
+      desc: 'Описание Компании 2',
+      file: [
+        { data: { __id: '#', __name: 'file 2' } },
+        undefined,
+        { data: { __id: '#', __name: 'file 2.2' } },
+        { data: { __id: '#', __name: 'file 2.2' } },
+        { data: { __id: '#', __name: 'file 2.2' } },
+      ],
+      numb: [13242945.2, '0123'],
+      data_arr: [2, 'строки'],
+      date: '13.12.2022',
+      user: [
+        { code: 'users', data: { __id: '#', __name: 'Андрей Сидоров' } },
+        { code: 'users', data: { __id: '#', __name: 'Андрей Сидоров' } },
+      ],
+    },
+    {
+      name: 'Компания 2',
+      desc: 'Описание Компании 2',
+      file: [
+        { data: { __id: '#', __name: 'file 2' } },
+        undefined,
+        { data: { __id: '#', __name: 'file 2.2' } },
+        { data: { __id: '#', __name: 'file 2.2' } },
+        { data: { __id: '#', __name: 'file 2.2' } },
+      ],
+      numb: [13242945.289987, '0123'],
+      data_arr: [2, 'строки'],
+      date: '13.12.2022',
+      user: [
+        { code: 'users', data: { __id: '#', __name: 'Андрей Сидоров' } },
+        { code: 'users', data: { __id: '#', __name: 'Андрей Сидоров' } },
+      ],
+    },
+    {
+      name: 'А компания 3',
       desc: 'Описание Компании 3',
       file: [{ data: { __id: '#', __name: 'file 3' } }],
       numb: 132423.121313,
@@ -321,7 +483,7 @@ const mockData = {
       ],
     },
     {
-      name: 'Компания 4',
+      name: 'Б компания 4',
       desc: 'Описание Компании 4',
       file: { data: { __id: '#', __name: 'file 4' } },
       date: '15.12.2022',
@@ -330,7 +492,7 @@ const mockData = {
   ],
 };
 
-const table = new Table(mockData.header);
+const table = new Table(mockData.header, { sorting: true });
 
 mockData.rows.forEach((data) => {
   const row = table.insert();
@@ -350,4 +512,10 @@ mockData.rows.forEach((data) => {
 
 const htmlTable = table.getTable();
 
-document.getElementById('root').append(htmlTable);
+// window.setTimeout(
+//   () => document.getElementById('root').append(htmlTable),
+//   3000
+// );
+document.getElementById('root').innerHTML = htmlTable.outerHTML;
+
+// table.addSorting();
