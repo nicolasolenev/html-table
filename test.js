@@ -1,14 +1,62 @@
+const css = `.custom-table-wrapper {
+  min-width: 830px;
+  margin: 12px 0 20px;
+}
+.custom-table {
+  border: 0.5px solid #d9d9d9;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: center;
+  overflow-wrap: break-word;
+}
+.custom-table thead {
+  z-index: 100;
+  position: sticky;
+  background: #e4eef8;
+}
+.custom-table tbody tr:nth-child(even) {
+  background: #c7c7c726;
+}
+.custom-table th {
+  position: relative;
+}
+.custom-table th,
+.custom-table td {
+  border: 0.5px solid #d9d9d9;
+  padding: 4px;
+}
+.custom-table td.custom-table__td-number {
+  text-align: right;
+  white-space: nowrap;
+}
+.custom-table tr.custom-table__tr_dark {
+  background: #c7c7c726;
+}
+.custom-table a {
+  display: block;
+  margin: 5px 0;
+}
+.sort:after {
+  position: absolute;
+  top: -5px;
+  right: 2px;
+  font-size: 22px;
+  color: #4d4d4d;
+}
+.sort-down:after {
+  content: '˅';
+}
+.sort-up:after {
+  content: '˄';
+}`;
+
 class Table {
-  tHead = this.createTHeadNode();
-  tBody = document.createElement('tbody');
-  rowCellsNames = [];
-  border = '0.5px solid #d9d9d9';
-  padding = '4px';
-  backgroundColor = 'rgba(199, 199, 199, 0.15)';
-  isEvenRow = false;
+  tHead = this.createNode('thead');
+  tBody = this.createNode('tbody');
   sortingCount = 300;
 
-  constructor(headerData, { headerTop, sorting } = { headerTop: 0 }) {
+  constructor(headerData, { headerTop, sorting } = {}) {
     if (!headerData) {
       console.error(
         'error in Table constructor: need header to initialize table'
@@ -16,74 +64,30 @@ class Table {
       return;
     }
 
+    this.cellData = headerData;
+
     const headerRow = this.createNode('tr');
 
     for (const thData of headerData) {
-      const th = this.createCellNode('th');
+      const th = this.createNode('th');
       th.dataset.name = thData.name;
       th.textContent = thData.caption;
       th.style.width = `${thData.width}px`;
-      th.style.position = 'relative';
       headerRow.append(th);
-      this.rowCellsNames.push({
-        name: thData.name,
-        type: thData.type,
-        align: thData.align,
-      });
     }
 
-    this.tHead.style.top = `${headerTop}px`;
+    this.tHead.style.top = `${headerTop ?? 0}px`;
     this.tHead.append(headerRow);
     this.tableId = 'id' + Math.random().toString(16).slice(2);
 
     sorting && this.addSorting();
   }
 
-  createNode(name) {
-    return document.createElement(name);
-  }
-
-  createCellNode(name) {
-    const td = this.createNode(name);
-    td.style.border = this.border;
-    td.style.padding = this.padding;
-    return td;
-  }
-
-  createTHeadNode() {
-    const tHead = this.createNode('thead');
-    tHead.style.zIndex = '100';
-    tHead.style.position = 'sticky';
-    tHead.style.background = '#E4EEF8';
-    tHead.style.userSelect = 'none';
-    return tHead;
-  }
-
-  createTableNode() {
-    const table = this.createNode('table');
-    table.id = this.tableId;
-    table.style.border = this.border;
-    table.style.width = '100%';
-    table.style.borderCollapse = 'separate';
-    table.style.borderSpacing = '0';
-    table.style.textAlign = 'center';
-    table.style.overflowWrap = 'break-word';
-    return table;
-  }
-
-  createContainerNode() {
-    const container = this.createNode('div');
-    container.style.width = '100%';
-    container.style.position = 'relative';
-    return container;
-  }
-
-  createWrapperNode() {
-    const wrapper = this.createNode('div');
-    wrapper.style.minWidth = '830px';
-    wrapper.style.marginTop = '12px';
-    wrapper.style.marginBottom = '20px';
-    return wrapper;
+  createNode(name, { className, id } = {}) {
+    const node = document.createElement(name);
+    className && (node.className = className);
+    id && (node.id = id);
+    return node;
   }
 
   createLink({ text, href, blank }) {
@@ -91,10 +95,7 @@ class Table {
     const link = document.createElement('a');
     link.textContent = text ?? window.location.origin + href;
     href && link.setAttribute('href', href);
-    link.style.display = 'block';
-    link.style.margin = '5px 0';
     blank && link.setAttribute('target', '_blank');
-
     return link;
   }
 
@@ -102,8 +103,8 @@ class Table {
     const tr = this.createNode('tr');
     const row = {};
 
-    for (const { name, type, align } of this.rowCellsNames) {
-      const td = this.createCellNode('td');
+    for (const { name, type, align } of this.cellData) {
+      const td = this.createNode('td');
       if (align === 'left' || align === 'right') {
         td.style.textAlign = align;
       }
@@ -111,17 +112,17 @@ class Table {
       row[name] = {};
 
       const createLink = this.createLink;
+      const getValues = (value) => [value].flat(1);
 
       Object.defineProperty(row, name, {
         set(value) {
-          const code = [value].flat(1)[0]?.code;
-          const kind = [value].flat(1)[0]?.kind;
+          const values = getValues(value);
+          const code = values[0]?.code;
+          const kind = values[0]?.kind;
 
           if (type === 'number') {
-            td.style.textAlign = 'right';
-            td.style.whiteSpace = 'nowrap';
-            const numbers = [value].flat(1);
-            numbers.forEach((item) => {
+            td.className = 'custom-table__td-number';
+            values.forEach((item) => {
               if (isNaN(item) || item === null) {
                 console.error('error in type "number": isNaN or null', item);
                 return;
@@ -143,9 +144,8 @@ class Table {
           }
 
           if (type === 'file' || code === 'disk_files' || kind === 'file') {
-            const files = [value].flat(1);
             try {
-              files.forEach((file) => {
+              values.forEach((file) => {
                 if (!file) return;
                 const link = createLink({
                   text: file.data?.__name,
@@ -161,9 +161,8 @@ class Table {
           }
 
           if (type === 'user' || code === 'users') {
-            const users = [value].flat(1);
             try {
-              users.forEach((user) => {
+              values.forEach((user) => {
                 if (!user) return;
                 const link = createLink({
                   text: user.data?.__name,
@@ -180,9 +179,8 @@ class Table {
           }
 
           if (type === 'app' || kind === 'application') {
-            const apps = [value].flat(1);
             try {
-              apps.forEach((app) => {
+              values.forEach((app) => {
                 if (!app) return;
                 const link = createLink({
                   text: app.data?.__name,
@@ -198,9 +196,8 @@ class Table {
           }
 
           if (type === 'link') {
-            const items = [value].flat(1);
             try {
-              items.forEach((item) => {
+              values.forEach((item) => {
                 if (!item) return;
                 const link = createLink({
                   text: item.text,
@@ -216,9 +213,8 @@ class Table {
             }
           }
 
-          const arr = [value].flat(1);
           try {
-            arr.forEach((item) => {
+            values.forEach((item) => {
               if (item === undefined || item === null) return;
               const div = document.createElement('div');
               div.append(item);
@@ -235,45 +231,30 @@ class Table {
       tr.append(td);
     }
 
-    if (this.isEvenRow) {
-      tr.style.backgroundColor = this.backgroundColor;
-    }
-
-    this.isEvenRow = !this.isEvenRow;
     this.tBody.append(tr);
     return row;
   }
 
   getTableNode() {
-    const table = this.createTableNode();
+    const table = this.createNode('table', {
+      className: 'custom-table',
+      id: this.tableId,
+    });
     table.append(this.tHead, this.tBody);
     return table;
   }
 
   getTable() {
-    const container = this.createContainerNode();
-    const wrapper = this.createWrapperNode();
-    wrapper.append(this.getTableNode());
+    const container = this.createNode('div');
+    container.style.width = '100%';
+    container.style.position = 'relative';
     const style = this.createNode('style');
-    style.appendChild(
-      document.createTextNode(`
-        .sort:after {
-          position: absolute;
-          top: -5px;
-          right: 2px;
-          font-size: 22px;
-          color: #4d4d4d;
-        }
-        .sort-down:after {
-          content: '˅';
-        }
-        .sort-up:after {
-          content: '˄';
-        }
-      `)
-    );
-    container.append(style);
-    container.append(wrapper);
+    style.appendChild(document.createTextNode(css));
+    const wrapper = this.createNode('div', {
+      className: 'custom-table-wrapper',
+    });
+    wrapper.append(this.getTableNode());
+    container.append(style, wrapper);
     return container;
   }
 
@@ -300,7 +281,7 @@ class Table {
     }
     const tHead = table?.querySelector('thead');
     const ths = [...table?.querySelectorAll('th')];
-    const columns = this.rowCellsNames;
+    const columns = this.cellData;
     tHead.style.cursor = 'pointer';
     tHead.addEventListener('click', (e) => {
       const columnIndex = columns.findIndex(
@@ -311,14 +292,13 @@ class Table {
         return;
       }
       const isSorted = th.classList.contains('sort-down');
-      ths.forEach((th) => (th.className = ''));
+      ths.forEach((th) => th.removeAttribute('class'));
       th.classList.add('sort');
       if (!isSorted) {
         th.classList.add('sort-down');
         this.sortTable(table, columnIndex);
         return;
       }
-      th.classList.remove('sort-down');
       th.classList.add('sort-up');
       this.sortTable(table, columnIndex, true);
     });
@@ -500,22 +480,8 @@ mockData.rows.forEach((data) => {
   for (const key in data) {
     row[key] = data[key];
   }
-
-  // row.name = data.name;
-  // row.desc = data.desc;
-  // row.file = data.file;
-  // row.data_arr = data.data_arr;
-  // row.numb = data.numb;
-  // row.date = data.date;
-  // row.user = data.user;
 });
 
 const htmlTable = table.getTable();
 
-// window.setTimeout(
-//   () => document.getElementById('root').append(htmlTable),
-//   3000
-// );
 document.getElementById('root').innerHTML = htmlTable.outerHTML;
-
-// table.addSorting();

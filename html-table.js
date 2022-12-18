@@ -7,16 +7,65 @@
     root.returnExports = factory(root.b);
   }
 })(this, function (b) {
-  class Table {
-    tHead = this.createTHeadNode();
-    tBody = document.createElement('tbody');
-    rowCellsNames = [];
-    border = '0.5px solid #d9d9d9';
-    padding = '4px';
-    backgroundColor = 'rgba(199, 199, 199, 0.15)';
-    isEvenRow = false;
+  const css = `.custom-table-wrapper {
+    min-width: 830px;
+    margin: 12px 0 20px;
+  }
+  .custom-table {
+    border: 0.5px solid #d9d9d9;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    text-align: center;
+    overflow-wrap: break-word;
+  }
+  .custom-table thead {
+    z-index: 100;
+    position: sticky;
+    background: #e4eef8;
+  }
+  .custom-table tbody tr:nth-child(even) {
+    background: #c7c7c726;
+  }
+  .custom-table th {
+    position: relative;
+  }
+  .custom-table th,
+  .custom-table td {
+    border: 0.5px solid #d9d9d9;
+    padding: 4px;
+  }
+  .custom-table td.custom-table__td-number {
+    text-align: right;
+    white-space: nowrap;
+  }
+  .custom-table tr.custom-table__tr_dark {
+    background: #c7c7c726;
+  }
+  .custom-table a {
+    display: block;
+    margin: 5px 0;
+  }
+  .sort:after {
+    position: absolute;
+    top: -5px;
+    right: 2px;
+    font-size: 22px;
+    color: #4d4d4d;
+  }
+  .sort-down:after {
+    content: '˅';
+  }
+  .sort-up:after {
+    content: '˄';
+  }`;
 
-    constructor(headerData, { headerTop } = { headerTop: 0 }) {
+  class Table {
+    tHead = this.createNode('thead');
+    tBody = this.createNode('tbody');
+    sortingCount = 300;
+
+    constructor(headerData, { headerTop, sorting } = {}) {
       if (!headerData) {
         console.error(
           'error in Table constructor: need header to initialize table'
@@ -24,67 +73,30 @@
         return;
       }
 
+      this.cellData = headerData;
+
       const headerRow = this.createNode('tr');
 
       for (const thData of headerData) {
-        const th = this.createCellNode('th');
+        const th = this.createNode('th');
+        th.dataset.name = thData.name;
         th.textContent = thData.caption;
         th.style.width = `${thData.width}px`;
         headerRow.append(th);
-        this.rowCellsNames.push({
-          name: thData.name,
-          type: thData.type,
-          align: thData.align,
-        });
       }
 
-      this.tHead.style.top = `${headerTop}px`;
+      this.tHead.style.top = `${headerTop ?? 0}px`;
       this.tHead.append(headerRow);
+      this.tableId = 'id' + Math.random().toString(16).slice(2);
+
+      sorting && this.addSorting();
     }
 
-    createNode(name) {
-      return document.createElement(name);
-    }
-
-    createCellNode(name) {
-      const td = this.createNode(name);
-      td.style.border = this.border;
-      td.style.padding = this.padding;
-      return td;
-    }
-
-    createTHeadNode() {
-      const tHead = this.createNode('thead');
-      tHead.style.zIndex = '100';
-      tHead.style.position = 'sticky';
-      tHead.style.background = '#E4EEF8';
-      return tHead;
-    }
-
-    createTableNode() {
-      const table = this.createNode('table');
-      table.style.border = this.border;
-      table.style.width = '100%';
-      table.style.borderCollapse = 'separate';
-      table.style.borderSpacing = '0';
-      table.style.textAlign = 'center';
-      table.style.overflowWrap = 'break-word';
-      return table;
-    }
-
-    createContainerNode() {
-      const container = this.createNode('div');
-      container.style.width = '100%';
-      container.style.position = 'relative';
-      return container;
-    }
-
-    createWrapperNode() {
-      const wrapper = this.createNode('div');
-      wrapper.style.minWidth = '830px';
-      wrapper.style.marginTop = '12px';
-      wrapper.style.marginBottom = '20px';
-      return wrapper;
+    createNode(name, { className, id } = {}) {
+      const node = document.createElement(name);
+      className && (node.className = className);
+      id && (node.id = id);
+      return node;
     }
 
     createLink({ text, href, blank }) {
@@ -92,10 +104,7 @@
       const link = document.createElement('a');
       link.textContent = text ?? window.location.origin + href;
       href && link.setAttribute('href', href);
-      link.style.display = 'block';
-      link.style.margin = '5px 0';
       blank && link.setAttribute('target', '_blank');
-
       return link;
     }
 
@@ -103,8 +112,8 @@
       const tr = this.createNode('tr');
       const row = {};
 
-      for (const { name, type, align } of this.rowCellsNames) {
-        const td = this.createCellNode('td');
+      for (const { name, type, align } of this.cellData) {
+        const td = this.createNode('td');
         if (align === 'left' || align === 'right') {
           td.style.textAlign = align;
         }
@@ -112,61 +121,40 @@
         row[name] = {};
 
         const createLink = this.createLink;
+        const getValues = (value) => [value].flat(1);
 
         Object.defineProperty(row, name, {
           set(value) {
-            const code = [value].flat(1)[0]?.code;
-            const kind = [value].flat(1)[0]?.kind;
+            const values = getValues(value);
+            const code = values[0]?.code;
+            const kind = values[0]?.kind;
 
             if (type === 'number') {
-              td.style.textAlign = 'right';
-              td.style.whiteSpace = 'nowrap';
-              const numbers = [value].flat(1);
-              numbers.forEach((item) => {
-                if (isNaN(item)) {
-                  console.error('error in type "number": isNaN', item);
+              td.className = 'custom-table__td-number';
+              values.forEach((item) => {
+                if (isNaN(item) || item === null) {
+                  console.error('error in type "number": isNaN or null', item);
+                  return;
                 }
                 try {
-                  let numb = item;
-                  if (numb === undefined || numb === null) return;
-                  numb = Math.round(numb * 100) / 100;
-                  const [intPart, floatPart] = numb.toString().split('.');
-                  let count = 0;
-                  numb = intPart
-                    .split('')
-                    .reverse()
-                    .reduce((sum, num) => {
-                      count++;
-                      sum = sum.concat(num);
-                      if (count === 3) {
-                        count = 0;
-                        sum = sum.concat(' ');
-                      }
-                      return sum;
-                    }, '')
-                    .split('')
-                    .reverse()
-                    .join('')
-                    .trim();
+                  const numb = new Intl.NumberFormat('ru-RU', {
+                    maximumFractionDigits: 2,
+                  }).format(item);
 
-                  if (floatPart !== undefined) {
-                    numb = numb + '.' + floatPart;
-                  }
                   const div = document.createElement('div');
                   div.textContent = numb;
                   td.append(div);
                 } catch (e) {
                   console.error('error in type "number"', e);
-                  td.textContent = value ?? '';
+                  td.textContent = item ?? '';
                 }
               });
               return;
             }
 
             if (type === 'file' || code === 'disk_files' || kind === 'file') {
-              const files = [value].flat(1);
               try {
-                files.forEach((file) => {
+                values.forEach((file) => {
                   if (!file) return;
                   const link = createLink({
                     text: file.data?.__name,
@@ -182,9 +170,8 @@
             }
 
             if (type === 'user' || code === 'users') {
-              const users = [value].flat(1);
               try {
-                users.forEach((user) => {
+                values.forEach((user) => {
                   if (!user) return;
                   const link = createLink({
                     text: user.data?.__name,
@@ -201,9 +188,8 @@
             }
 
             if (type === 'app' || kind === 'application') {
-              const apps = [value].flat(1);
               try {
-                apps.forEach((app) => {
+                values.forEach((app) => {
                   if (!app) return;
                   const link = createLink({
                     text: app.data?.__name,
@@ -219,9 +205,8 @@
             }
 
             if (type === 'link') {
-              const items = [value].flat(1);
               try {
-                items.forEach((item) => {
+                values.forEach((item) => {
                   if (!item) return;
                   const link = createLink({
                     text: item.text,
@@ -237,9 +222,8 @@
               }
             }
 
-            const arr = [value].flat(1);
             try {
-              arr.forEach((item) => {
+              values.forEach((item) => {
                 if (item === undefined || item === null) return;
                 const div = document.createElement('div');
                 div.append(item);
@@ -256,27 +240,77 @@
         tr.append(td);
       }
 
-      if (this.isEvenRow) {
-        tr.style.backgroundColor = this.backgroundColor;
-      }
-
-      this.isEvenRow = !this.isEvenRow;
       this.tBody.append(tr);
       return row;
     }
 
     getTableNode() {
-      const table = this.createTableNode();
+      const table = this.createNode('table', {
+        className: 'custom-table',
+        id: this.tableId,
+      });
       table.append(this.tHead, this.tBody);
       return table;
     }
 
     getTable() {
-      const container = this.createContainerNode();
-      const wrapper = this.createWrapperNode();
+      const container = this.createNode('div');
+      container.style.width = '100%';
+      container.style.position = 'relative';
+      const style = this.createNode('style');
+      style.appendChild(document.createTextNode(css));
+      const wrapper = this.createNode('div', {
+        className: 'custom-table-wrapper',
+      });
       wrapper.append(this.getTableNode());
-      container.append(wrapper);
+      container.append(style, wrapper);
       return container;
+    }
+
+    sortTable(table, col, reverse) {
+      const tb = table.tBodies[0];
+      const trs = [...tb.rows];
+      reverse = -(+reverse || -1);
+      trs.sort(
+        (a, b) =>
+          reverse *
+          a.cells[col].textContent
+            .trim()
+            .localeCompare(b.cells[col].textContent.trim())
+      );
+      trs.forEach((tr) => tb.append(tr));
+    }
+
+    addSorting() {
+      const table = document.getElementById(this.tableId);
+      if (!table) {
+        --this.sortingCount > 0 &&
+          window.setTimeout(() => this.addSorting(), 800);
+        return;
+      }
+      const tHead = table?.querySelector('thead');
+      const ths = [...table?.querySelectorAll('th')];
+      const columns = this.cellData;
+      tHead.style.cursor = 'pointer';
+      tHead.addEventListener('click', (e) => {
+        const columnIndex = columns.findIndex(
+          (col) => col.name === e.target.dataset.name
+        );
+        const th = e.target;
+        if (th.tagName !== 'TH') {
+          return;
+        }
+        const isSorted = th.classList.contains('sort-down');
+        ths.forEach((th) => th.removeAttribute('class'));
+        th.classList.add('sort');
+        if (!isSorted) {
+          th.classList.add('sort-down');
+          this.sortTable(table, columnIndex);
+          return;
+        }
+        th.classList.add('sort-up');
+        this.sortTable(table, columnIndex, true);
+      });
     }
   }
 
