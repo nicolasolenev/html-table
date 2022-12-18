@@ -1,5 +1,4 @@
 const css = `.custom-table-wrapper {
-  min-width: 830px;
   margin: 12px 0 20px;
 }
 .custom-table {
@@ -13,7 +12,7 @@ const css = `.custom-table-wrapper {
 .custom-table thead {
   z-index: 100;
   position: sticky;
-  background: #e4eef8;
+  background: #f0f6fb;
 }
 .custom-table tbody tr:nth-child(even) {
   background: #c7c7c726;
@@ -47,6 +46,15 @@ const css = `.custom-table-wrapper {
 }
 .custom-table__sort_up:after {
   transform: rotate(180deg);
+}
+@media (max-width: 850px) {
+  .custom-table-wrapper {
+    overflow: scroll;
+  }
+  .custom-table {
+    width: auto;
+    min-width: 830px;
+  }
 }`;
 
 class Table {
